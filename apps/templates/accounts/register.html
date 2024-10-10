@@ -1,0 +1,167 @@
+{% extends "layouts/base-fullscreen.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}   
+
+    <div class="auth-wrapper">
+        <div class="video-bg">
+            <video autoplay muted loop id="bg-video">
+                <source src="{{ config.ASSETS_ROOT }}/images/video/video2.mp4" type="video/mp4">
+            </video>
+            <div class="video-overlay"></div>
+        </div>
+        <div class="auth-content">
+            <div class="auth-bg">
+                <span class="r"></span>
+                <span class="r s"></span>
+                <span class="r s"></span>
+                <span class="r"></span>
+            </div>
+            <div class="card">
+                <div class="card-body text-center">
+
+                    <h3 class="mb-4">Sign Up</h3>
+
+                    <span class="mb-2 text-muted">
+                        {% if msg %}
+                            <span class="text-danger">{{ msg | safe }}</span>
+                        {% else %}
+                            Add your credentials
+                        {% endif %} 
+                    </span>
+
+                    <br />
+                    <br />
+
+                    <!-- Hide the form on success -->
+                    {% if success %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary shadow-2 mb-4">Sign In</a>
+                {% else %}
+                    <!-- Display form errors at the top -->
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul>
+                                {% for field_errors in form.errors.values() %}
+                                    {% for error in field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                        <form role="form" method="post" action="{{ url_for('register') }}">
+
+                            {{ form.hidden_tag() }}                    
+
+                            <div class="input-group mb-3">
+                                {{ form.username.label(class="sr-only") }}
+                                {{ form.username(placeholder="Username", class="form-control") }}
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.username.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="input-group mb-3">
+                                {{ form.email.label(class="sr-only") }}
+                                {{ form.email(placeholder="Email", class="form-control") }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.email.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group mb-3">
+                                {{ form.password.label(class="sr-only") }}
+                                {{ form.password(placeholder="Password", class="form-control") }}
+                                {% if form.password.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group mb-4">
+                                {{ form.password2.label(class="sr-only") }}
+                                {{ form.password2(placeholder="Repeat Password", class="form-control") }}
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password2.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="submit" name="register" class="btn btn-primary shadow-2 mb-4">Register</button>
+
+                        </form>
+                        
+                        <p class="mb-0 text-muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+                       
+
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        .video-bg {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           overflow: hidden;
+           z-index: -1;
+       }
+
+       #bg-video {
+           position: absolute;
+           top: 50%;
+           left: 50%;
+           width: 100%;
+           height: 100%;
+           object-fit: cover;
+           transform: translate(-50%, -50%);
+           z-index: -2;
+       }
+
+       .video-overlay {
+           position: absolute;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           background: rgba(0, 0, 0, 0.50);
+           z-index: -1;
+       }
+
+       .auth-wrapper {
+           position: relative;
+           z-index: 1;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           height: 100vh;
+       }
+
+       .auth-content {
+           position: relative;
+           z-index: 2;
+           width: 100%;
+           max-width: 400px;
+           padding: 20px;
+           background: rgba(255, 255, 255, 0.9);
+           border-radius: 10px;
+           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+       }
+
+       .auth-bg .r {
+           display: none;
+       }
+   </style>
+{% endblock content %}

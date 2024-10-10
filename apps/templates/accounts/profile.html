@@ -1,0 +1,169 @@
+{% extends "layouts/base_biasa.html" %} {% block title %} Profile {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+{{ super() }}
+<style>
+    .profile-img {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 50%;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="pcoded-main-container">
+  <div class="pcoded-wrapper">
+    <div class="pcoded-content">
+      <div class="pcoded-inner-content">
+        <div class="main-body">
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %} {% endif %} {% endwith %}
+
+          <div class="page-wrapper">
+            <div class="row">
+              <div class="col-sm-8">
+                <div class="card">
+                  <div class="card-header">
+                    <h5>Edit Info</h5>
+                  </div>
+                  <div class="card-block">
+                    <form
+                      method="post"
+                      action="{{ url_for('profile', user_id=current_user.id) }}"
+                    >
+                      {{ form.hidden_tag() }}
+                      <!-- Include Flask-WTF hidden tag for CSRF protection -->
+
+                      <div class="row">
+                        <div class="col-sm-6 mb-4">
+                          <div class="form-group">
+                            <label for="exampleInputUsername">Username</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="exampleInputUsername"
+                              name="username"
+                              value="{{ form.username.data }}"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div class="col-sm-6 mb-4">
+                          <div class="form-group">
+                            <label
+                              {%
+                              if
+                              not
+                              current_user.email
+                              %}
+                              class="text-danger"
+                              {%
+                              endif
+                              %}
+                              for="exampleInputEmail1"
+                              >Email address</label
+                            >
+                            <input
+                              type="email"
+                              {%
+                              if
+                              current_user.email
+                              %}
+                              readonly
+                              value="{{ current_user.email }}"
+                              {%
+                              endif
+                              %}
+                              class="form-control"
+                              id="exampleInputEmail1"
+                            />
+                            {% if not current_user.email %}
+                            <small id="emailHelp" class="form-text text-danger">
+                              You don't have an email address associated with
+                              this account.
+                            </small>
+                            {% endif %}
+                          </div>
+                        </div>
+
+                        <div class="col-sm-12 mb-4">
+                          <div class="form-group">
+                            <label for="inputWhatsApp">Nomor WhatsApp</label>
+                            {{ form.whatsapp_number(class="form-control",
+                            id="inputWhatsApp") }}
+                            <small id="abf" class="form-text text-muted">Digunakan untuk mengirimkan notifikasi emosi siswa.</small>
+                          </div>
+                        </div>
+                        <div class="col-sm-12 mb-4">
+                          <div class="form-group">
+                            <label for="inputAddress">Alamat</label>
+                            {{ form.address(class="form-control",
+                            id="inputAddress") }}
+                          </div>
+                        </div>
+                        <div class="col-sm-12 mb-2">
+                            <div class="form-group">
+                                <label for="exampleInputProfilePicture">Profile Picture</label>
+                                {% if current_user.profile_picture %}
+                                    <br>
+                                    <img src="{{ url_for('static', filename='uploads/profile_pictures/' + current_user.profile_picture) }}" class="profile-img">
+                                    <br><br>
+                                {% endif %}
+                                {{ form.profile_picture(class="form-control-file", id="exampleInputProfilePicture") }}
+                            </div
+
+                        <div class="col-sm-12 mb-2">
+                          <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                              Submit
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="card">
+                  <div class="card-block">
+                    <div
+                      class="d-flex align-items-center justify-content-center flex-column"
+                    >
+                      <div class="w-50 p-3">
+                        <img
+                          src="{{ config.ASSETS_ROOT }}/images/user/profile.jpg"
+                          alt="profile image"
+                          class="img-fluid rounded-circle"
+                        />
+                      </div>
+                      <div class="text-center">
+                        <h4 class="font-weight-bold h6">
+                          {{ current_user.username }}
+                        </h4>
+                        <p class="font-italic text-muted">
+                          {% if current_user.email %} {{ current_user.email }}
+                          {% endif %}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}{% endblock javascripts %}

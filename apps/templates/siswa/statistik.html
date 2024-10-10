@@ -1,0 +1,156 @@
+{% extends "layouts/base.html" %}
+{% block title %} Statistik {% endblock %}
+
+{% block stylesheets %}
+<style>
+    .chart-container {
+        width: 100%;
+        margin: auto;
+        padding-left: 220px;
+        max-width: 1100px;
+    }
+    h1, h2 {
+        font-size: 1.1rem;
+    }
+    .btn-export {
+        font-size: 0.7rem;
+    }
+    .header-container {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    h1 {
+        margin-right: 300px;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container">
+    <!-- Header untuk judul dan tombol export -->
+    <div class="header-container">
+        <h1 class="text-left">Statistik Ekspresi dan Pose</h1>
+        <a href="{{ url_for('export_excel') }}" class="btn btn-primary btn-export">Export to Excel</a>
+    </div>
+<br>
+    <!-- Grafik gabungan Ekspresi dan Pose -->
+    <div class="chart-container">
+        <canvas id="combinedChart"></canvas>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<!-- Tambahkan Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+<script>
+    function fetchAndRenderCharts() {
+        // Mengambil data dari API
+        fetch('/get/statistik')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Response Data: ", data);  // Log data yang diterima
+            
+            if (!data.expresion_data) {
+                console.error('Invalid response format:', data);
+                return;
+            }
+
+            const expresionDataJS = data.expresion_data;
+            
+            // Mengelompokkan data dalam rentang waktu 1 menit
+            const groupedData = groupByMinute(expresionDataJS);
+
+            // Data untuk masing-masing emosi
+            const emotions = ['normal', 'cemas', 'bosan', 'senang', 'sedih', 'marah'];
+            const datasets = emotions.map((emotion, index) => ({
+                label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+                data: groupedData.map(group => group[emotion] || 0),
+                borderColor: getColor(emotion),
+                backgroundColor: getColor(emotion),
+                fill: false,
+                borderWidth: 2
+            }));
+
+            // Membuat chart
+            const combinedChartCtx = document.getElementById('combinedChart').getContext('2d');
+            const combinedChart = new Chart(combinedChartCtx, {
+                type: 'line',
+                data: {
+                    labels: groupedData.map(group => group.timestamp),  // Menggunakan timestamp sebagai label
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',  // Mengatur agar jarak antar titik adalah 1 menit
+                                displayFormats: {
+                                    minute: 'yyyy-MM-dd HH:mm'  // Format yang akan ditampilkan pada sumbu X
+                                },
+                                tooltipFormat: 'yyyy-MM-dd HH:mm'  // Format tooltip saat hover
+                            },
+                            title: {
+                                display: true,
+                                text: 'Timestamp'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Jumlah Emosi'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1  // Agar nilai pada sumbu Y naik dengan langkah 1
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error fetching data:', error));
+    }
+
+    // Fungsi untuk mengelompokkan data berdasarkan interval 1 menit
+    function groupByMinute(data) {
+        const grouped = {};
+        data.forEach(item => {
+            const timestamp = new Date(item.timestamp);
+            const minute = new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate(), timestamp.getHours(), timestamp.getMinutes()).toISOString();
+            
+            if (!grouped[minute]) {
+                grouped[minute] = { timestamp: minute };
+            }
+            
+            const emotion = item.expresion.toLowerCase();
+            grouped[minute][emotion] = (grouped[minute][emotion] || 0) + 1;
+        });
+
+        return Object.values(grouped);
+    }
+
+    // Fungsi untuk mendapatkan warna berdasarkan emosi
+    function getColor(emotion) {
+        switch(emotion) {
+            case 'normal': return 'rgba(75, 192, 192, 1)';
+            case 'cemas': return 'rgba(255, 99, 132, 1)';
+            case 'bosan': return 'rgba(255, 206, 86, 1)';
+            case 'senang': return 'rgba(54, 162, 235, 1)';
+            case 'sedih': return 'rgba(153, 102, 255, 1)';
+            case 'marah': return 'rgba(255, 159, 64, 1)';
+            default: return 'rgba(0, 0, 0, 1)';
+        }
+    }
+
+    // Panggil fungsi fetch dan render chart saat halaman di-load
+    window.onload = fetchAndRenderCharts;
+</script>
+
+{% endblock javascripts %}

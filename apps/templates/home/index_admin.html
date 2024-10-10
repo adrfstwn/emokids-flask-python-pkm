@@ -1,0 +1,308 @@
+{% extends "layouts/base_admin.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block stylesheets %}
+<style>
+    .card {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .card-header {
+        width: 100%;
+        text-align: left;
+    }
+
+    .camera-preview {
+        display: block;
+        margin: 10px;
+    }
+
+    .detect-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="pcoded-main-container">
+    <div class="pcoded-wrapper">
+        <div class="pcoded-content">
+            <div class="pcoded-inner-content">
+                <div class="main-body">
+                    <div class="page-wrapper">
+                        <!-- Card for Expression Detection Camera -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Live Kamera Ekspresi (*Real Time)</h5>
+                            </div>
+                            <div class="card-block px-0 py-3">
+                                <div class="table-responsive">
+                                    <video id="expressionVideo" class="camera-preview" width="800" height="500"
+                                        autoplay></video>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card for Pose Detection Camera -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Live Kamera Pose (*Real Time)</h5>
+                            </div>
+                            <div class="card-block px-0 py-3">
+                                <div class="table-responsive">
+                                    <video id="poseVideo" class="camera-preview" width="800" height="500"
+                                        autoplay></video>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section for displaying the processed images -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Live Detect (*Real Time)</h5>
+                            </div>
+                            <div class="card-block px-0 py-3">
+                                <div class="table-responsive detect-container">
+                                    <img id="expressionImage" class="camera-preview" width="400" height="275">
+                                    <img id="poseImage" class="camera-preview" width="400" height="275">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xl-8 col-md-6">
+                                <div class="card Recent-Users">
+                                    <div class="card-header">
+                                        <h5>Riwayat Emosi Anak</h5>
+                                    </div>
+                                    <div class="card-block px-0 py-3">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Timestamp</th>
+                                                        <th>Emotion</th>
+                                                        <th>Jumlah</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="emotionHistoryBody">
+                                                    <!-- Dynamic Emotion History -->
+                                                </tbody>
+                                            </table>
+                                            <div class="pagination">
+                                                <button id="prevBtn" class="btn btn-primary" disabled>Previous</button>
+                                                <button id="nextBtn" class="btn btn-primary">Next</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-xl-4">
+                                <div class="card card-social">
+                                    <div class="card-block border-bottom">
+                                        <div class="d-flex align-items-center">
+                                            <!-- Logo -->
+                                            <div>
+                                                <img class="rounded-circle" style="width:100px;" src="{{ config.ASSETS_ROOT }}/images/logo.png" alt="activity-user">
+                                            </div>
+                                            <!-- Tulisan EMOKIDS -->
+                                            <div class="ml-3">
+                                                <h3 class="text-c-blue mb-0">EMOKIDS</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- <div class="card-block">
+                                        <div class="row align-items-center justify-content-center card-active">
+                                            <div class="col-6">
+                                                <h6 class="text-center m-b-10"><span
+                                                        class="text-muted m-r-5">Jumlah Siswa</span>25</h6>
+                                                
+                                            </div>
+                                            <div class="col-6">
+                                                <h6 class="text-center  m-b-10"><span
+                                                        class="text-muted m-r-5">Jumlah User</span>7</h6>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                     -->
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- [ Main Content ] end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+<script>
+    const emotionHistoryBody = document.getElementById("emotionHistoryBody");
+    const totalEmotionCount = document.getElementById("totalEmotionCount");
+    const expressionVideo = document.getElementById('expressionVideo');
+    const poseVideo = document.getElementById('poseVideo');
+    const canvasExpression = document.createElement('canvas');
+    const canvasPose = document.createElement('canvas');
+    const contextExpression = canvasExpression.getContext('2d');
+    const contextPose = canvasPose.getContext('2d');
+
+    const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+    // Start streaming from both cameras
+    if (navigator.mediaDevices.getUserMedia) {
+        // Stream for expression detection
+        navigator.mediaDevices.getUserMedia({ video: { deviceId: getCameraDeviceId(0) } }) // Assume first camera for expression
+            .then(function (stream) {
+                expressionVideo.srcObject = stream;
+            })
+            .catch(function (err) {
+                console.log("Something went wrong with the expression camera: " + err);
+            });
+
+        // Stream for pose detection
+        navigator.mediaDevices.getUserMedia({ video: { deviceId: getCameraDeviceId(1) } }) // Assume second camera for pose
+            .then(function (stream) {
+                poseVideo.srcObject = stream;
+            })
+            .catch(function (err) {
+                console.log("Something went wrong with the pose camera: " + err);
+            });
+    } else {
+        alert('getUserMedia not supported on your browser!');
+    }
+
+    // Function to select a specific camera based on its index (0 for the first camera, 1 for the second camera)
+    function getCameraDeviceId(cameraIndex) {
+        return navigator.mediaDevices.enumerateDevices().then(devices => {
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            return videoDevices[cameraIndex].deviceId;
+        });
+    }
+
+    // Process frames from both cameras
+    expressionVideo.addEventListener('play', function () {
+        const drawExpression = () => {
+            contextExpression.drawImage(expressionVideo, 0, 0, canvasExpression.width, canvasExpression.height);
+            const imageData = canvasExpression.toDataURL('image/jpeg');
+
+            // Send the expression frame to the server
+            fetch('/process_image_expression', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('expressionImage').src = data.expression_image;
+
+                    // Emit the detected expression to the socket for the user page
+                    socket.emit('expression_image', {
+                        expression_image: data.expression_image.split(',')[1],
+                        raw_expression: data.raw_expression
+                    });
+                    console.log('Sent expression image data to user:', data.expression_image); // Log untuk cek
+                    console.log('Sent raw expression data to user:', data.raw_expression); // Log untuk cek
+                })
+                .catch(error => console.error('Error:', error));
+
+            setTimeout(drawExpression, 100);
+        };
+
+        canvasExpression.width = expressionVideo.videoWidth;
+        canvasExpression.height = expressionVideo.videoHeight;
+        drawExpression();
+    });
+
+    poseVideo.addEventListener('play', function () {
+        const drawPose = () => {
+            contextPose.drawImage(poseVideo, 0, 0, canvasPose.width, canvasPose.height);
+            const imageData = canvasPose.toDataURL('image/jpeg');
+
+            // Send the pose frame to the server
+            fetch('/process_image_pose', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('poseImage').src = data.pose_image;
+
+                    // Emit the detected pose to the socket for the user page
+                    socket.emit('pose_image', { 
+                        pose_image: data.pose_image.split(',')[1], 
+                        raw_pose: data.raw_pose
+                    });
+
+                    console.log('Sent pose image data to user:', data.pose_image); // Log untuk cek
+                    console.log('Sent pose image data to user:', data.raw_pose); // Log untuk cek
+                })
+                .catch(error => console.error('Error:', error));
+
+            setTimeout(drawPose, 100);
+        };
+
+        canvasPose.width = poseVideo.videoWidth;
+        canvasPose.height = poseVideo.videoHeight;
+        drawPose();
+    });
+
+    function fetchEmotionHistory() {
+        fetch('/emotion_history', {
+            method: 'GET'
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the current table content
+                emotionHistoryBody.innerHTML = '';
+
+                // Populate the table with new data
+                const emotions = data.emotion_count;
+                const startTime = data.start_time;
+                const endTime = data.end_time;
+
+                // Add each emotion entry to the table
+                for (let emotion in emotions) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                    <td>${startTime} - ${endTime}</td>
+                    <td>${emotion}</td>
+                    <td>${emotions[emotion]}</td>
+                `;
+                    emotionHistoryBody.appendChild(row);
+                }
+
+                // Update the total emotion count
+                const totalCount = Object.values(emotions).reduce((sum, count) => sum + count, 0);
+                totalEmotionCount.textContent = totalCount;
+            })
+            .catch(error => console.error('Error fetching emotion history:', error));
+    }
+
+    // Fetch emotion history on page load
+    fetchEmotionHistory();
+
+    // Optionally, refresh the emotion history every minute
+    setInterval(fetchEmotionHistory, 10000);
+
+</script>
+
+{% endblock javascripts %}
