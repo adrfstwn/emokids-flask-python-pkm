@@ -26,6 +26,6 @@ COPY . .
 # Expose port aplikasi
 EXPOSE 5000
 
-# Jalankan aplikasi
-CMD ["gunicorn", "--workers", "6", "--bind", "0.0.0.0:5000", "--timeout", "3600",  "app:app"]
+# Jalankan aplikasi Flask pada port 5000
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 
