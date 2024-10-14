@@ -4,15 +4,15 @@ import base64
 import time
 import logging
 import numpy as np
-import os
+# import os
 
 from apps import create_app, socketio, db
 from apps.models import ExpresionData, PoseData
 from ultralytics import YOLO
 from flask import request, jsonify, json
 from tf_keras.models import load_model
-from dotenv import load_dotenv
-from twilio.rest import Client
+# from dotenv import load_dotenv
+# from twilio.rest import Client
 
 # Constants
 SEQUENCE_LENGTH = 15
