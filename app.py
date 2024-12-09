@@ -4,14 +4,14 @@ import base64
 import time
 import logging
 import numpy as np
-# import os
+import os
 
 from apps import create_app, socketio, db
 from apps.models import ExpresionData, PoseData
 from ultralytics import YOLO
 from flask import request, jsonify, json
 from tf_keras.models import load_model
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 # from twilio.rest import Client
 
 # Constants
@@ -29,19 +29,20 @@ THRESHOLD = 5
 
 app = create_app()
 
-expression_model = YOLO("ekspresi_ncnn_model")
-pose_model = YOLO("pose_ncnn_model/yolov8l-pose.pt")
+if os.getenv("FLASK_ENV") != "migration":
+    expression_model = YOLO("ekspresi_ncnn_model")
+    pose_model = YOLO("pose_ncnn_model/yolov8l-pose.pt")
 
-load_pose_model = load_model("pose_ncnn_model/runs/model.h5")
+    load_pose_model = load_model("pose_ncnn_model/runs/model.h5")
 
-# Load classes from classes.json
-with open('pose_ncnn_model/runs/classes.json', 'r') as f:
-    pose_classes = json.load(f)
+    # Load classes from classes.json
+    with open('pose_ncnn_model/runs/classes.json', 'r') as f:
+        pose_classes = json.load(f)
 
-latest_expression_frame = None
-latest_pose_frame = None
-latest_raw_expression_frame = None
-latest_raw_pose_frame = None
+    latest_expression_frame = None
+    latest_pose_frame = None
+    latest_raw_expression_frame = None
+    latest_raw_pose_frame = None
 
 def process_pose_frame(frame, keypoints):
     frame_data = []
