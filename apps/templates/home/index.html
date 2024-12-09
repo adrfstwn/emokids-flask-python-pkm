@@ -1,254 +1,436 @@
 {% extends "layouts/base.html" %} {% block title %} Dashboard {% endblock %} {%
 block stylesheets %}
 <style>
-    .card {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
+  .card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
 
-    .card-header {
-        width: 100%;
-        text-align: left;
+  .card-header {
+    width: 100%;
+    text-align: left;
+  }
+
+  .camera-preview {
+    display: block;
+    margin: 10px;
+    max-width: 100%;
+    /* Supaya tidak melebihi lebar layar */
+    height: auto;
+    /* Menjaga rasio aspek */
+  }
+
+  .detect-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .detect-container canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .dropdown-menu {
+    width: 100%;
+  }
+
+  /* Buat tabel agar bisa scroll di layar kecil */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    /* Supaya tabel bisa di-scroll secara horizontal */
+  }
+
+  .table {
+    width: 100%;
+    /* Pastikan tabel menyesuaikan dengan kontainer */
+    min-width: 600px;
+    /* Jika lebar tabel terlalu kecil, ini akan mencegah kolom terlalu rapat */
+  }
+
+  .table th,
+  .table td {
+    text-align: left;
+    padding: 8px;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Responsif untuk tablet */
+  @media only screen and (max-width: 768px) {
+    .card-block {
+      padding: 10px;
     }
 
     .camera-preview {
-        display: block;
-        margin: 10px;
+      width: 100%;
+      height: auto;
     }
 
     .detect-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+      flex-direction: column;
+    }
+
+    .detect-container canvas {
+      width: 100%;
+    }
+
+    .pagination {
+      justify-content: space-around;
     }
 
     .dropdown-menu {
-        width: 100%;
+      width: 100%;
     }
+
+    /* Sesuaikan tabel */
+    .table {
+      font-size: 14px;
+    }
+  }
+
+  /* Responsif untuk handphone */
+  /* Responsif untuk handphone */
+  @media only screen and (max-width: 480px) {
+    .card-header h5 {
+      font-size: 16px;
+    }
+
+    .card {
+      margin: 10px 0;
+    }
+
+    .camera-preview {
+      width: 100%;
+      height: auto;
+    }
+
+    .detect-container {
+      flex-direction: column;
+    }
+
+    .detect-container canvas {
+      width: 100%;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      /* Supaya tabel bisa di-scroll secara horizontal */
+    }
+
+    .table {
+      width: 100%;
+      min-width: unset;
+      /* Hilangkan batas minimal agar lebih fleksibel */
+      font-size: 12px;
+      /* Ukuran teks lebih kecil */
+    }
+
+    .table th,
+    .table td {
+      font-size: 10px;
+      /* Ukuran teks lebih kecil untuk tabel */
+      white-space: nowrap;
+      /* Mencegah teks membungkus dan membuat tabel tetap rapi */
+    }
+
+    .table th {
+      width: auto;
+    }
+
+    .table td {
+      text-align: left;
+      padding: 5px;
+    }
+
+    .pagination button {
+      width: 48%;
+    }
+  }
 </style>
 {% endblock stylesheets %} {% block content %}
 <div class="pcoded-main-container">
-    <div class="pcoded-wrapper">
-        <div class="pcoded-content">
-            <div class="pcoded-inner-content">
-                <div class="main-body">
-                    <div class="page-wrapper">
-                        <!-- Card for live streaming from admin (without detection) -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Monitoring Kamera Ekspresi (*Real Time)</h5>
-                            </div>
-                            <div class="card-block px-0 py-3">
-                                <div class="table-responsive">
-                                    <img id="liveStreamExpression" class="camera-preview" width="800" height="500" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Card for live streaming from admin (without detection) -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Monitoring Kamera Pose (*Real Time)</h5>
-                            </div>
-                            <div class="card-block px-0 py-3">
-                                <div class="table-responsive">
-                                    <img id="liveStreamPose" class="camera-preview" width="800" height="500" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Card for live detection results from admin -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Hasil Deteksi Kamera Ekspresi & Pose (*Real Time)</h5>
-                            </div>
-                            <div class="card-block px-0 py-3">
-                                <div class="table-responsive detect-container">
-                                    <canvas id="expressionCanvas" width="400" height="275"></canvas>
-                                    <canvas id="poseCanvas" width="400" height="275"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Riwayat Emosi Section -->
-                        <div class="row">
-                            <!-- Card Riwayat Emosi Anak -->
-                            <div class="col-md-8 col-xl-8">
-                                <div class="card Recent-Users">
-                                    <div class="card-header">
-                                        <h5>Riwayat Emosi Anak</h5>
-                                    </div>
-                                    <div class="card-block px-0 py-3">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Timestamp</th>
-                                                        <th>Emotion</th>
-                                                        <th>Jumlah</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="emotionHistoryBody">
-                                                    <!-- Dynamic Emotion History -->
-                                                </tbody>
-                                            </table>
-                                            <div class="pagination">
-                                                <button id="prevBtn" class="btn btn-primary" disabled>Previous</button>
-                                                <button id="nextBtn" class="btn btn-primary">Next</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Card Pilih Siswa -->
-                            <div class="col-md-4 col-xl-4">
-                                <div class="card card-social">
-                                    <div class="card-block border-bottom">
-                                        <div class="row align-items-center">
-                                            <div class="col-auto">
-                                                <img class="rounded-circle" style="width: 50px"
-                                                    src="{{ config.ASSETS_ROOT }}/images/logo.png" alt="Logo" />
-                                            </div>
-                                            <div class="col">
-                                                <h5 class="text-c-blue mb-0">Pilih Siswa</h5>
-                                            </div>
-                                        </div>
-                                        <div class="row align-items-center mt-3">
-                                            <div class="col-12 text-center">
-                                                <div class="dropdown">
-                                                    <button class="btn btn-secondary dropdown-toggle" type="button"
-                                                        id="dropdownMenuButton" data-toggle="dropdown"
-                                                        aria-haspopup="true" aria-expanded="false">
-                                                        Pilih Siswa
-                                                    </button>
-                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                        {% for siswa in all_siswa %}
-                                                        <a class="dropdown-item" href="#">{{ siswa.name }}</a>
-                                                        {% endfor %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
+  <div class="pcoded-wrapper">
+    <div class="pcoded-content">
+      <div class="pcoded-inner-content">
+        <div class="main-body">
+          <div class="page-wrapper">
+            <!-- Card for live streaming from admin (without detection) -->
+            <div class="card">
+              <div class="card-header">
+                <h5>Monitoring Kamera Ekspresi (*Real Time)</h5>
+              </div>
+              <div class="card-block px-0 py-3">
+                <div class="table-responsive">
+                  <img
+                    id="liveStreamExpression"
+                    class="camera-preview"
+                    width="800"
+                    height="500"
+                  />
                 </div>
+              </div>
             </div>
+
+            <!-- Card for live streaming from admin (without detection) -->
+            <div class="card">
+              <div class="card-header">
+                <h5>Monitoring Kamera Pose (*Real Time)</h5>
+              </div>
+              <div class="card-block px-0 py-3">
+                <div class="table-responsive">
+                  <img
+                    id="liveStreamPose"
+                    class="camera-preview"
+                    width="800"
+                    height="500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Card for live detection results from admin -->
+            <div class="card">
+              <div class="card-header">
+                <h5>Hasil Deteksi Kamera Ekspresi & Pose (*Real Time)</h5>
+              </div>
+              <div class="card-block px-0 py-3">
+                <div class="table-responsive detect-container">
+                  <canvas
+                    id="expressionCanvas"
+                    width="400"
+                    height="275"
+                  ></canvas>
+                  <canvas id="poseCanvas" width="400" height="275"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Riwayat Emosi Section -->
+            <div class="row">
+              <!-- Card Riwayat Emosi Anak -->
+              <div class="col-md-8 col-xl-8">
+                <div class="card Recent-Users">
+                  <div class="card-header">
+                    <h5>Riwayat Emosi Anak</h5>
+                  </div>
+                  <div class="card-block px-0 py-3">
+                    <div class="table-responsive">
+                      <table class="table table-hover">
+                        <thead>
+                          <tr>
+                            <th>Timestamp</th>
+                            <th>Emotion</th>
+                            <th>Jumlah</th>
+                          </tr>
+                        </thead>
+                        <tbody id="emotionHistoryBody">
+                          <!-- Dynamic Emotion History -->
+                        </tbody>
+                      </table>
+                      <div class="pagination">
+                        <button id="prevBtn" class="btn btn-primary" disabled>
+                          Previous
+                        </button>
+                        <button id="nextBtn" class="btn btn-primary">
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card Pilih Siswa -->
+              <div class="col-md-4 col-xl-4">
+                <div class="card card-social">
+                  <div class="card-block border-bottom">
+                    <div class="row align-items-center">
+                      <div class="col-auto">
+                        <img
+                          class="rounded-circle"
+                          style="width: 50px"
+                          src="{{ config.ASSETS_ROOT }}/images/logo.png"
+                          alt="Logo"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5 class="text-c-blue mb-0">Pilih Siswa</h5>
+                      </div>
+                    </div>
+                    <div class="row align-items-center mt-3">
+                      <div class="col-12 text-center">
+                        <div class="dropdown">
+                          <button
+                            class="btn btn-secondary dropdown-toggle"
+                            type="button"
+                            id="dropdownMenuButton"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          >
+                            Pilih Siswa
+                          </button>
+                          <div
+                            class="dropdown-menu"
+                            aria-labelledby="dropdownMenuButton"
+                          >
+                            {% for siswa in all_siswa %}
+                            <a class="dropdown-item" href="#"
+                              >{{ siswa.name }}</a
+                            >
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 {% endblock content %} {% block javascripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
 <script>
-    const emotionHistoryBody = document.getElementById("emotionHistoryBody");
-    const totalEmotionCount = document.getElementById("totalEmotionCount");
+  const emotionHistoryBody = document.getElementById("emotionHistoryBody");
+  const totalEmotionCount = document.getElementById("totalEmotionCount");
 
-    window.onload = function () {
-        const expressionCanvas = document.getElementById("expressionCanvas");
-        const poseCanvas = document.getElementById("poseCanvas");
-        const liveStreamExpression = document.getElementById("liveStreamExpression");
-        const liveStreamPose = document.getElementById("liveStreamPose");
-        const expressionCtx = expressionCanvas.getContext("2d");
-        const poseCtx = poseCanvas.getContext("2d");
+  window.onload = function () {
+    const expressionCanvas = document.getElementById("expressionCanvas");
+    const poseCanvas = document.getElementById("poseCanvas");
+    const liveStreamExpression = document.getElementById(
+      "liveStreamExpression"
+    );
+    const liveStreamPose = document.getElementById("liveStreamPose");
+    const expressionCtx = expressionCanvas.getContext("2d");
+    const poseCtx = poseCanvas.getContext("2d");
 
-        const socket = io.connect(
-            location.protocol + "//" + document.domain + ":" + location.port
+    const socket = io.connect(
+      location.protocol + "//" + document.domain + ":" + location.port
+    );
+
+    socket.on("expression_frame", function (data) {
+      const image = new Image();
+      image.src = "data:image/jpeg;base64," + data.expression_image;
+      image.onload = function () {
+        expressionCtx.clearRect(
+          0,
+          0,
+          expressionCanvas.width,
+          expressionCanvas.height
         );
+        expressionCtx.drawImage(
+          image,
+          0,
+          0,
+          expressionCanvas.width,
+          expressionCanvas.height
+        );
+      };
+      if (data.flipped) {
+        document.getElementById("expressionImage").style.transform =
+          "scaleY(-1)";
+      } else {
+        document.getElementById("expressionImage").style.transform =
+          "scaleY(1)";
+      }
+      image.onerror = function () {
+        console.error("Error loading expression image");
+      };
+    });
 
-        socket.on("expression_frame", function (data) {
-            const image = new Image();
-            image.src = "data:image/jpeg;base64," + data.expression_image;
-            image.onload = function () {
-                expressionCtx.clearRect(
-                    0,
-                    0,
-                    expressionCanvas.width,
-                    expressionCanvas.height
-                );
-                expressionCtx.drawImage(
-                    image,
-                    0,
-                    0,
-                    expressionCanvas.width,
-                    expressionCanvas.height
-                );
-            };
-            image.onerror = function () {
-                console.error("Error loading expression image");
-            };
-        });
+    socket.on("pose_frame", function (data) {
+      const image = new Image();
+      image.src = "data:image/jpeg;base64," + data.pose_image;
+      image.onload = function () {
+        poseCtx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
+        poseCtx.drawImage(image, 0, 0, poseCanvas.width, poseCanvas.height);
+      };
+      if (data.flipped) {
+        document.getElementById("poseImage").style.transform =
+          "scaleY(-1)";
+      } else {
+        document.getElementById("poseImage").style.transform =
+          "scaleY(1)";
+      }
+      image.onerror = function () {
+        console.error("Error loading pose image");
+      };
+    });
 
-        socket.on("pose_frame", function (data) {
-            const image = new Image();
-            image.src = "data:image/jpeg;base64," + data.pose_image;
-            image.onload = function () {
-                poseCtx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
-                poseCtx.drawImage(image, 0, 0, poseCanvas.width, poseCanvas.height);
-            };
-            image.onerror = function () {
-                console.error("Error loading pose image");
-            };
-        });
+    socket.on("raw_expression", function (data) {
+      if (data.raw_expression) {
+        liveStreamExpression.src =
+          "data:image/jpeg;base64," + data.raw_expression;
+      } else {
+        console.error("No raw expression image received");
+      }
+    });
+    socket.on("raw_pose", function (data) {
+      if (data.raw_pose) {
+        liveStreamPose.src = "data:image/jpeg;base64," + data.raw_pose;
+      } else {
+        console.error("No raw pose image received");
+      }
+    });
+  };
 
-        socket.on("raw_expression", function (data) {
-            if (data.raw_expression) {
-                liveStreamExpression.src = "data:image/jpeg;base64," + data.raw_expression;
-            } else {
-                console.error("No raw expression image received");
-            }
-        });
-        socket.on("raw_pose", function (data) {
-            if (data.raw_pose) {
-                liveStreamPose.src = "data:image/jpeg;base64," + data.raw_pose;
-            } else {
-                console.error("No raw pose image received");
-            }
-        });
-    };
+  function fetchEmotionHistory() {
+    fetch("/emotion_history", {
+      method: "GET",
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Clear the current table content
+        emotionHistoryBody.innerHTML = "";
 
-    function fetchEmotionHistory() {
-        fetch('/emotion_history', {
-            method: 'GET'
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Clear the current table content
-                emotionHistoryBody.innerHTML = '';
+        // Populate the table with new data
+        const emotions = data.emotion_count;
+        const startTime = data.start_time;
+        const endTime = data.end_time;
 
-                // Populate the table with new data
-                const emotions = data.emotion_count;
-                const startTime = data.start_time;
-                const endTime = data.end_time;
-
-                // Add each emotion entry to the table
-                for (let emotion in emotions) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+        // Add each emotion entry to the table
+        for (let emotion in emotions) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
                     <td>${startTime} - ${endTime}</td>
                     <td>${emotion}</td>
                     <td>${emotions[emotion]}</td>
                 `;
-                    emotionHistoryBody.appendChild(row);
-                }
+          emotionHistoryBody.appendChild(row);
+        }
 
-                // Update the total emotion count
-                const totalCount = Object.values(emotions).reduce((sum, count) => sum + count, 0);
-                totalEmotionCount.textContent = totalCount;
-            })
-            .catch(error => console.error('Error fetching emotion history:', error));
-    }
+        // Update the total emotion count
+        const totalCount = Object.values(emotions).reduce(
+          (sum, count) => sum + count,
+          0
+        );
+        totalEmotionCount.textContent = totalCount;
+      })
+      .catch((error) =>
+        console.error("Error fetching emotion history:", error)
+      );
+  }
 
-    // Fetch emotion history on page load
-    fetchEmotionHistory();
+  // Fetch emotion history on page load
+  fetchEmotionHistory();
 
-    // Optionally, refresh the emotion history every minute
-    setInterval(fetchEmotionHistory, 10000);
+  // Optionally, refresh the emotion history every minute
+  setInterval(fetchEmotionHistory, 10000);
 </script>
 {% endblock javascripts %}
