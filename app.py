@@ -313,6 +313,6 @@ if __name__ == '__main__':
 
     try:
         socketio.start_background_task(send_frame)
-        socketio.run(app, debug=True)
+        socketio.run(app, host='0.0.0.0', port=5000, debug=False)
     except Exception as e:
         logging.error(f"Error starting the application: {str(e)}")
