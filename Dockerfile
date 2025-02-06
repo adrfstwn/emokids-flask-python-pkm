@@ -23,6 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Salin seluruh isi direktori aplikasi ke container
 COPY . .
 
+ENV FLASK_APP=app.py
+
 # Expose port aplikasi
 EXPOSE 5000
 
